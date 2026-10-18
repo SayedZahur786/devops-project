@@ -205,6 +205,7 @@ playground for Docker, kubeadm Kubernetes playground for the cluster) on
 - First pipeline run: **all green** (test, build+Trivy+GHCR push; the deploy job
   skips until `vars.DEPLOY_ENABLED=true`):
   <https://github.com/SayedZahur786/devops-project/actions/runs/39089182651>
+  (green run list: `ci-actions-green.png`)
 - Published images: `ghcr.io/sayedzahur786/devops-project/hackboard-backend` and
   `ghcr.io/sayedzahur786/devops-project/hackboard-frontend` (tags: `latest` and
   the commit SHA).
