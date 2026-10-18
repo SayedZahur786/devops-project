@@ -1,0 +1,8 @@
+# Dev overlay: enable ingress on a local cluster (kind/minikube + ingress-nginx)
+ingress:
+  enabled: true
+  className: nginx
+  host: hackboard.local
+
+serviceMonitor:
+  enabled: true

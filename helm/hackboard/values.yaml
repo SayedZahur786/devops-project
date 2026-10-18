@@ -1,0 +1,53 @@
+namespace: hackboard
+
+backend:
+  image: ghcr.io/sayedzahur786/devops-project/hackboard-backend
+  tag: latest
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+frontend:
+  image: ghcr.io/sayedzahur786/devops-project/hackboard-frontend
+  tag: latest
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+postgres:
+  enabled: true
+  image: postgres:16-alpine
+  user: hackboard
+  password: hackboard
+  database: hackboard
+  storage: 1Gi
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: false
+  className: nginx
+  host: hackboard.local
+
+serviceMonitor:
+  enabled: false

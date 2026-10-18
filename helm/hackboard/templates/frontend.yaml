@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hackboard-frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: hackboard-frontend
+    {{- include "hackboard.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app: hackboard-frontend
+  template:
+    metadata:
+      labels:
+        app: hackboard-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image }}:{{ .Values.frontend.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BACKEND_HOST
+              value: hackboard-backend
+          ports:
+            - containerPort: 80
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackboard-frontend
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: hackboard-frontend
+spec:
+  type: {{ .Values.frontend.service.type }}
+  selector:
+    app: hackboard-frontend
+  ports:
+    - port: {{ .Values.frontend.service.port }}
+      targetPort: 80

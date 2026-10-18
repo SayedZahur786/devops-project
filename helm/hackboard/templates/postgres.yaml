@@ -1,0 +1,65 @@
+{{- if .Values.postgres.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hackboard-postgres-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.postgres.storage }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hackboard-postgres
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: hackboard-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hackboard-postgres
+  template:
+    metadata:
+      labels:
+        app: hackboard-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user | quote }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.postgres.password | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database | quote }}
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hackboard-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackboard-postgres
+  namespace: {{ .Values.namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: hackboard-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+{{- end }}
