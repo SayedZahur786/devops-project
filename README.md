@@ -201,8 +201,13 @@ playground for Docker, kubeadm Kubernetes playground for the cluster) on
 ### 5. CI/CD
 
 - Workflow file: `.github/workflows/ci.yml`. Test -> build+scan+push (GHCR,
-  SHA tags) -> conditional `helm upgrade`. Pipeline run evidence is added after
-  the first push (the repo is pushed once access is set up).
+  SHA tags) -> conditional `helm upgrade`.
+- First pipeline run: **all green** (test, build+Trivy+GHCR push; the deploy job
+  skips until `vars.DEPLOY_ENABLED=true`):
+  <https://github.com/SayedZahur786/devops-project/actions/runs/39089182651>
+- Published images: `ghcr.io/sayedzahur786/devops-project/hackboard-backend` and
+  `ghcr.io/sayedzahur786/devops-project/hackboard-frontend` (tags: `latest` and
+  the commit SHA).
 
 ### 6. Terraform (AWS EKS - plan only, by design)
 
