@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository_owner }}/devops-project/hackboard-backend
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository_owner }}/devops-project/hackboard-frontend
+
+jobs:
+  test:
+    name: Test (pytest + frontend build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Run pytest
+        working-directory: backend
+        run: pytest -v
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+  build-scan-push:
+    name: Build, Trivy scan, push to GHCR
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase registry owner for image tags
+        run: |
+          echo "OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build backend image
+        run: |
+          docker build -t ghcr.io/$OWNER_LC/devops-project/hackboard-backend:${{ github.sha }} \
+                       -t ghcr.io/$OWNER_LC/devops-project/hackboard-backend:latest ./backend
+
+      - name: Build frontend image
+        run: |
+          docker build -t ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:${{ github.sha }} \
+                       -t ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:latest ./frontend
+
+      - name: Trivy scan - backend image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --severity HIGH,CRITICAL --ignore-unfixed \
+            ghcr.io/$OWNER_LC/devops-project/hackboard-backend:${{ github.sha }}
+
+      - name: Trivy scan - frontend image
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --severity HIGH,CRITICAL --ignore-unfixed \
+            ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:${{ github.sha }}
+
+      - name: Push images to GHCR
+        run: |
+          docker push ghcr.io/$OWNER_LC/devops-project/hackboard-backend:${{ github.sha }}
+          docker push ghcr.io/$OWNER_LC/devops-project/hackboard-backend:latest
+          docker push ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:${{ github.sha }}
+          docker push ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:latest
+
+  deploy:
+    name: Deploy with Helm
+    needs: build-scan-push
+    runs-on: ubuntu-latest
+    # Runs only when a KUBECONFIG secret is configured on the repo.
+    # Without a live cluster this job is skipped on purpose; see README.
+    if: ${{ vars.DEPLOY_ENABLED == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install hackboard ./helm/hackboard \
+            --namespace hackboard --create-namespace \
+            --set backend.image.tag=${{ github.sha }} \
+            --set frontend.image.tag=${{ github.sha }}
