@@ -1,0 +1,27 @@
+# kube-prometheus-stack values for the HackBoard capstone
+# Install: helm install prometheus prometheus-community/kube-prometheus-stack \
+#   -n monitoring --create-namespace -f monitoring/prometheus-values.yaml
+prometheus:
+  prometheusSpec:
+    # Pick up every ServiceMonitor with label release=prometheus (default)
+    serviceMonitorSelectorNilUsesHelmValues: false
+grafana:
+  enabled: true
+  adminPassword: hackboard
+  service:
+    type: ClusterIP
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: hackboard
+          folder: HackBoard
+          type: file
+          options:
+            path: /var/lib/grafana/dashboards/hackboard
+  dashboards:
+    hackboard:
+      hackboard-overview:
+        gnetId: 12740
+        revision: 1
+        datasource: Prometheus

@@ -1,0 +1,7 @@
+# Optional standalone Grafana install (alternative to the bundled one in
+# prometheus-values.yaml). The default setup uses kube-prometheus-stack's Grafana.
+adminPassword: hackboard
+service:
+  type: ClusterIP
+persistence:
+  enabled: false
