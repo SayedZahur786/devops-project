@@ -90,6 +90,19 @@ pytest -v
 9 tests covering health/readiness/metrics, CRUD, filtering, validation and stats.
 Tests run against an isolated in-memory SQLite database, never the real PostgreSQL.
 
+## Demo
+
+Recorded walkthrough (2 min 23 s): a captioned tour with an AI voice-over,
+built from the real screenshots captured during the runs documented below -
+the compose stack, tests, Trivy, the green CI runs, the Kubernetes deploy,
+HPA scaling, both troubleshooting fixes and the Grafana dashboard.
+
+- In this repo (cannot expire):
+  [docs/demo/capstone-demo.mp4](docs/demo/capstone-demo.mp4) -
+  watch it on GitHub:
+  <https://github.com/SayedZahur786/devops-project/blob/main/docs/demo/capstone-demo.mp4>
+- Full quality download: <https://gofile.io/d/iuAOJqja>
+
 ## CI/CD
 
 Every push to `main` runs:
