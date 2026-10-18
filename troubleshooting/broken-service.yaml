@@ -1,0 +1,15 @@
+# Troubleshooting lab 2: Service selector does not match the pod labels.
+# Apply, then check `kubectl get endpoints hackboard-backend-svc` - it will be empty.
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackboard-backend-svc
+  namespace: hackboard
+spec:
+  # BUG: the backend pods carry label app=hackboard-backend,
+  # this selector matches nothing.
+  selector:
+    app: hackboard-backnd
+  ports:
+    - port: 8000
+      targetPort: 8000

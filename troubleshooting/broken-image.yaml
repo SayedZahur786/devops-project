@@ -1,0 +1,26 @@
+# Troubleshooting lab 1: broken image reference.
+# Apply, observe ImagePullBackOff, then find and fix the root cause.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hackboard-backend-broken
+  namespace: hackboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hackboard-backend-broken
+  template:
+    metadata:
+      labels:
+        app: hackboard-backend-broken
+    spec:
+      containers:
+        - name: backend
+          # BUG: this image tag does not exist
+          image: ghcr.io/sayedzahur786/devops-project/hackboard-backend:does-not-exist
+          envFrom:
+            - secretRef:
+                name: hackboard-db
+          ports:
+            - containerPort: 8000
