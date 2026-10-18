@@ -94,6 +94,26 @@ jobs:
           docker push ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:${{ github.sha }}
           docker push ghcr.io/$OWNER_LC/devops-project/hackboard-frontend:latest
 
+  terraform-validate:
+    name: Terraform validate (EKS module + local kind module)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Validate EKS module
+        working-directory: terraform
+        run: |
+          terraform init -backend=false
+          terraform validate
+      - name: Test EKS module (mocked AWS provider - unit + simulated apply)
+        working-directory: terraform
+        run: terraform test
+      - name: Validate local kind module
+        working-directory: terraform-local
+        run: |
+          terraform init -backend=false
+          terraform validate
+
   deploy:
     name: Deploy with Helm
     needs: build-scan-push
